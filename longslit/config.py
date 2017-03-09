@@ -15,15 +15,17 @@ config_filename = 'spec_config.yml'
 
 class GlobalConfig(object):
 
-    def __init__(self, overscan, dispersion_axis=0, # TODO: can only be 0 or 1 - validate!
+    def __init__(self, name, overscan,
+                 dispersion_axis=0, # TODO: can only be 0 or 1 - validate!
                  path_exclude=None, path_include=None,
-                 init_wavelength_filename='wavelength-init.XX',
                  **kwargs):
         """
         Global configuration settings.
 
         Parameters
         ----------
+        name : str
+            Name of the pipeline run.
         overscan : int
             Index at which the overscan region begins.
             TODO: assumes it is always greater than index - modify to allow other
@@ -34,10 +36,6 @@ class GlobalConfig(object):
             Path names to exclude from the reduction process, include all others.
         path_include : list (optional)
             Path names to include in the reduction process, ignore all others.
-        init_wavelength_filename : str (optional)
-            Name of the global, rough wavelength solution file created/to create by
-            `scripts/init_wavelength.py`.
-
         """
 
         for key in kwargs:
