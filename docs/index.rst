@@ -108,18 +108,25 @@ specify the path to the root of the data, and a name for the pipeline run:
         remove cosmic rays).
 
         The first window will close, and the next window will then display the
-        1D comparison lamp spectrum vs. pixel.
+        1D comparison lamp spectrum vs. pixel. Here you'll need to identify as
+        many lines as you can using a reference spectrum from your observatory.
+        When you see a line you know, use the 'scrubbing' tool to select a range
+        of pixels around the line that contains just the line you are
+        identifying. When you select a line, you'll see a text box appear --
+        enter the exact wavelength of the contained line in Angstroms. If the
+        line is blended or part of a multi-plet, pick a different one! Make sure
+        the lines you identify span a suitable range of pixels and cover the
+        spectrum fairly well.
 
-        - Main window should be the plot of the 1D spectrum, median'd over
-            some region.
-        - Second window should be a table view of (pixel, wavelength guess)
-            for each of the 3 1D traces
+        As you identify lines, the script will output (to a cache file and to
+        the command line) the best-fit wavelengths of the lines within the
+        selected regions by fitting a Gaussian to the pixels and flux values.
 
     b. **Using the CLI to initialize the wavelength solution**
         TODO: Fill this in.
 
 
-    .. note::
+    .. warning::
 
         This might fail if there is significant tilt or rotation of the CCD with
         respect to the disperser. In such a case, the emission lines will curve
@@ -127,5 +134,5 @@ specify the path to the root of the data, and a name for the pipeline run:
         fit for the 2D wavelength solution. It would be nice to support these
         cases too!
 
-#. **The next thing**
+#. ****
     More stuff
