@@ -37,12 +37,13 @@ can be reduced identically, and that they all live under some root directory
 ``/path/to/observing_run``.
 
 With that in mind, the first thing to do in using the pipeline interface is to
-initialize the pipeline using the ``init_pipeline.py`` script:
+initialize the pipeline using the ``init_pipeline.py`` script. We need to
+specify the path to the root of the data, and a name for the pipeline run:
 
 .. code-block:: bash
 
     cd /path/to/longslit
-    python scripts/init_pipeline.py --rootpath=/path/to/observing_run
+    python scripts/init_pipeline.py --rootpath=/path/to/observing_run --name=mdm-rrlyrae
 
 #. **Assumed file structure**
     The pipeline assumes that all of the data are stored under the same
@@ -59,8 +60,9 @@ initialize the pipeline using the ``init_pipeline.py`` script:
     file. The globally configurable parameters are:
 
     * ``name``: The name of the pipeline run. The metadata for a given pipeline
-        run will be stored in ``observing_run/longslit/<name>``. For example,
-        information about what files have already been processed.
+        run will be stored in ``observing_run/longslit/<name>`` (e.g.,
+        information about what files have already been processed). This will be
+        filled with the name you specify when running ``init_pipeline.py``
     * ``dispersion_axis``: The index of the axis along the CCD that corresponds
         to the dispersion (e.g., wavelength) axis. This follows `numpy`
         convention, so ``axis=0`` means the 'row' direction is the dispersion
@@ -79,7 +81,7 @@ initialize the pipeline using the ``init_pipeline.py`` script:
         If this is specified, all other subdirectories are excluded by default.
 
 #. **Initialize the wavelength solution**
-    The first thing that needs to be done is to provide an initial, rough
+    The next thing that needs to be done is to specify an initial, rough
     identification of spectral lines in a wavelength calibration (comparison
     lamp) spectrum. This is either done interactively through a `matplotlib`
     GUI, or by specifying (pixel, wavelength) pairs through the command line
@@ -88,6 +90,17 @@ initialize the pipeline using the ``init_pipeline.py`` script:
     interface or ``--gui`` for the GUI).
 
     a. **Using the GUI to initialize the wavelength solution**
+        For example:
+
+        # TODO: what will the default filename be?
+
+        .. code-block:: bash
+
+            cd /path/to/longslit
+            python scripts/init_wavelength.py \
+            --config=/path/to/observing_run/longslit/mdm-rrlyrae/mdm-rrlyrae.yml \
+            --gui
+
         Running ``init_wavelength.py`` with the GUI interface will open two
         interactive windows.
 
