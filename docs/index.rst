@@ -90,7 +90,7 @@ specify the path to the root of the data, and a name for the pipeline run:
     interface or ``--gui`` for the GUI).
 
     a. **Using the GUI to initialize the wavelength solution**
-        For example:
+        Continuing with our example, execute:
 
         # TODO: what will the default filename be?
 
@@ -101,8 +101,8 @@ specify the path to the root of the data, and a name for the pipeline run:
             --config=/path/to/observing_run/longslit/mdm-rrlyrae/mdm-rrlyrae.yml \
             --gui
 
-        Running ``init_wavelength.py`` with the GUI interface will open two
-        interactive windows.
+        This will open the GUI interface, which consists of three interactive
+        windows. Window 1 shows
 
         - Main window should be the plot of the 1D spectrum, median'd over
             some region.
