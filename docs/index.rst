@@ -101,13 +101,31 @@ specify the path to the root of the data, and a name for the pipeline run:
             --config=/path/to/observing_run/longslit/mdm-rrlyrae/mdm-rrlyrae.yml \
             --gui
 
-        This will open the GUI interface, which consists of three interactive
-        windows. Window 1 shows
+        This will start the GUI interface.
+
+        The first window will ask you to first select a range of columns or rows
+        to extract a 1D spectrum from (by taking the median of this region to
+        remove cosmic rays).
+
+        The first window will close, and the next window will then display the
+        1D comparison lamp spectrum vs. pixel.
 
         - Main window should be the plot of the 1D spectrum, median'd over
             some region.
         - Second window should be a table view of (pixel, wavelength guess)
             for each of the 3 1D traces
+
+    b. **Using the CLI to initialize the wavelength solution**
+        TODO: Fill this in.
+
+
+    .. note::
+
+        This might fail if there is significant tilt or rotation of the CCD with
+        respect to the disperser. In such a case, the emission lines will curve
+        or tilt across the spatial axis of the CCD and may make it hard to
+        fit for the 2D wavelength solution. It would be nice to support these
+        cases too!
 
 #. **The next thing**
     More stuff
