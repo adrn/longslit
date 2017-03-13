@@ -79,52 +79,63 @@ specify the path to the root of the data, and a name for the pipeline run:
         all subdirectories of the top-level data path. When a subdirectory name
         matches one of the patterns, it is included in the processing queue.
         If this is specified, all other subdirectories are excluded by default.
+    * ``gain``:
+    * ``read_noise``:
+
+#. **Create master flat and bias frames**
+    This is done per-night of an observing run. The bias frames are combined
+    using ... The flat-field images are combined ...
+
+#. **Process raw frames **
+    TODO: Process all files, create new intermediate 2D frames
+
+#. ** Extract 1D spectra
+    TODO: trace or aperture - parameters of each
 
 #. **Initialize the wavelength solution**
     The next thing that needs to be done is to specify an initial, rough
     identification of spectral lines in a wavelength calibration (comparison
-    lamp) spectrum. This is either done interactively through a `matplotlib`
-    GUI, or by specifying (pixel, wavelength) pairs through the command line
-    interface (you can specify one or the other when running the
-    ``init_wavelength.py`` -- use the flag ``--cli`` for the command-line
-    interface or ``--gui`` for the GUI).
+    lamp) spectrum. This is done interactively through a `matplotlib` GUI by
+    selecting the lines and selecting or entering the wavelength of the line
+    centroid.
 
-    a. **Using the GUI to initialize the wavelength solution**
-        Continuing with our example, execute:
+    Continuing with our example, execute:
 
-        # TODO: what will the default filename be?
+    # TODO: what will the default filename be?
 
-        .. code-block:: bash
+    .. code-block:: bash
 
-            cd /path/to/longslit
-            python scripts/init_wavelength.py \
-            --config=/path/to/observing_run/longslit/mdm-rrlyrae/mdm-rrlyrae.yml \
-            --gui
+        cd /path/to/longslit
+        python scripts/init_wavelength.py \
+        --config=/path/to/observing_run/longslit/mdm-rrlyrae/mdm-rrlyrae.yml \
+        --linelist=/path/to/linelist.txt
 
-        This will start the GUI interface.
+    This will start the GUI interface, pre-loaded with the specified linelist.
+    If no linelist is specified, you'll have to enter the line centroids
+    manually.
 
-        The first window will ask you to first select a range of columns or rows
-        to extract a 1D spectrum from (by taking the median of this region to
-        remove cosmic rays).
+    By default, this will extract the central 32 pixels of the CCD and use the
+    median of this region as the 1D initial trace for line identification (the
+    extraction region is customizable with the ``--aperture1d`` flag).
 
-        The first window will close, and the next window will then display the
-        1D comparison lamp spectrum vs. pixel. Here you'll need to identify as
-        many lines as you can using a reference spectrum from your observatory.
-        When you see a line you know, use the 'scrubbing' tool to select a range
-        of pixels around the line that contains just the line you are
-        identifying. When you select a line, you'll see a text box appear --
-        enter the exact wavelength of the contained line in Angstroms. If the
-        line is blended or part of a multi-plet, pick a different one! Make sure
-        the lines you identify span a suitable range of pixels and cover the
-        spectrum fairly well.
+    The first window will ask you to first select a range of columns or rows
+    to extract a 1D spectrum from (by taking the median of this region to
+    remove cosmic rays).
 
-        As you identify lines, the script will output (to a cache file and to
-        the command line) the best-fit wavelengths of the lines within the
-        selected regions by fitting a Gaussian to the pixels and flux values.
+    The first window will close, and the next window will then display the
+    1D comparison lamp spectrum vs. pixel. Here you'll need to identify as
+    many lines as you can using a reference spectrum from your observatory.
+    When you see a line you know, use the 'scrubbing' tool to select a range
+    of pixels around the line that contains just the line you are
+    identifying. When you select a line, you'll see a text box appear --
+    enter the exact wavelength of the contained line in Angstroms. If the
+    line is blended or part of a multi-plet, pick a different one! Make sure
+    the lines you identify span a suitable range of pixels and cover the
+    spectrum fairly well.
 
-    b. **Using the CLI to initialize the wavelength solution**
-        TODO: Fill this in.
-
+    As you identify lines, the script will output (to a cache file and to
+    the command line) the best-fit wavelengths of the lines within the
+    selected regions by fitting a Gaussian to the pixels and flux values.
 
     .. warning::
 
