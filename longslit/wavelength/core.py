@@ -5,15 +5,22 @@ import sys
 # Third-party
 import astropy.units as u
 import numpy as np
-from scipy.optimize import curve_fit
+from scipy.optimize import minimize
 
 # Project
 from ..log import logger
 from ..utils import gaussian_constant
 
-__all__ = ['get_emission_line_centroid']
+__all__ = ['fit_emission_line']
 
-def get_emission_line_centroid(pix_grid, flux, centroid0=None, amp0=None, offset0=None):
+def _errfunc(p, pix, flux):
+    if p[0] < 0 or p[2] < 0:
+        return np.inf
+
+    return np.sum((gaussian_constant(pix, *p) - flux)**2)
+
+def fit_emission_line(pix_grid, flux, centroid0=None, sigma0=None, amp0=None,
+                      offset0=None):
     """
     TODO:
 
@@ -42,15 +49,18 @@ def get_emission_line_centroid(pix_grid, flux, centroid0=None, amp0=None, offset
         # TODO / MAGIC NUMBER: buffer hard-coded to 16??
         offset0 = flux[int_ctrd0-16:int_ctrd0+16].min()
 
-    p0 = (amp0, centroid0, 1., offset0)
-    p,_ = curve_fit(gaussian_constant, centroid0, flux, p0=p0)
-    peak_pix = p[1]
+    if sigma0 is None:
+        sigma0 = 4. # MAGIC NUMBER
+
+    p0 = (amp0, centroid0, sigma0, offset0)
+    res = minimize(_errfunc, x0=p0, args=(pix_grid, flux))
+    p = res.x
 
     fail_msg = "Fitting spectral line in comp lamp spectrum failed. {msg}"
-    if peak_pix < 0. or peak_pix > len(flux):
+    if p[1] < min(pix_grid) or p[1] > max(pix_grid):
         raise ValueError(fail_msg.format(msg="Unphysical peak centroid: {:.3f}".format(p[0])))
 
-    elif p[2] < 1. or p[2] > 10.:
+    elif p[2] < 0.1 or p[2] > 10.:
         raise ValueError(fail_msg.format(msg="Unphysical line width: {:.3f}".format(p[2])))
 
-    return peak_pix
+    return dict(amp=p[0], centroid=p[1], stddev=p[2], const=p[3])
