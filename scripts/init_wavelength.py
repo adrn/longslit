@@ -19,15 +19,56 @@ import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 import yaml
+from scipy.interpolate import InterpolatedUnivariateSpline
 
 # Package
 from longslit.wavelength import fit_emission_line
 from longslit.log import logger
 
+def get_line_props(pixels, flux, xmin, xmax, sigma0=4.):
+    i1 = int(np.floor(xmin))
+    i2 = int(np.ceil(xmax))+1
+    pix = pixels[i1:i2]
+    _flux = flux[i1:i2]
+    norm_flux = (_flux - _flux.min()) / (_flux.max() - _flux.min())
+
+    try:
+        line_props = fit_emission_line(pix, norm_flux,
+                                       centroid0=pix[norm_flux.argmax()],
+                                       sigma0=sigma0,
+                                       amp0=np.sqrt(2*np.pi*sigma0**2),
+                                       offset0=0.)
+    except ValueError as e:
+        msg = "Failed to fit line! See terminal for more information."
+        logger.error(msg)
+        logger.error(str(e))
+        # textbox.setText(msg) # TODO: turn all of this into a class so I can get that
+        return None
+
+    line_props['amp'] *= (_flux.max() - _flux.min())
+    line_props['const'] += _flux.min()
+    return line_props
+
+def draw_line_marker(line_props, wavelength, ax):
+    peak = line_props['amp']/(np.sqrt(2*np.pi)*line_props['stddev'])
+    print(peak)
+    centroid = line_props['centroid']
+
+    space = 0.05*peak
+    ax.plot([centroid,centroid], [peak+space,peak+3*space],
+            lw=1., linestyle='-', marker='', alpha=0.5, c='#2166AC')
+    ax.text(centroid, peak+4*space, "{:.3f} $\AA$".format(wavelength),
+            ha='center', va='bottom', rotation='vertical')
+
 def gui_solution(pixels, flux, fig, ax, line_list=None):
-    map_dict = dict()
-    map_dict['wavelength'] = []
-    map_dict['pixel'] = []
+    # map_dict = dict()
+    # map_dict['wavelength'] = []
+    # map_dict['pixel'] = []
+    # line_widths = [] # for auto-solving lines
+
+    # FOR TESTING:
+    map_dict = {'wavelength': [5460.7399999999998, 7245.1665999999996, 6717.0429999999997, 6678.2762000000002, 6598.9529000000002, 6532.8822], 'pixel': [1226.9646056472734, 349.38080535972756, 610.93127457855871, 630.09556101866531, 668.9871368080278, 701.444940640303]}
+    line_widths = [1.5] # for auto-solving lines
 
     # Add a side menu for specifying the wavelength of the selected line
     panel = QtWidgets.QWidget()
@@ -61,45 +102,27 @@ def gui_solution(pixels, flux, fig, ax, line_list=None):
 
         # if line_list specified, find closest line from list:
         if line_list is not None:
-            idx = np.abs(np.array(line_list) - wave_val).argmin()
+            absdiff = np.abs(np.array(line_list) - wave_val)
+            idx = absdiff.argmin()
+            if absdiff[idx] > 1.:
+                logger.error("Couldn't find precise line corresponding to "
+                             "input {:.3f}".format(wave_val))
+                return
+
             logger.info("Snapping input wavelength {:.3f} to line list "
                         "value {:.3f}".format(wave_val, line_list[idx]))
             wave_val = line_list[idx]
 
-        i1 = int(np.floor(xmin))
-        i2 = int(np.ceil(xmax))+1
-        pix = pixels[i1:i2]
-        _flux = flux[i1:i2]
-        norm_flux = (_flux - _flux.min()) / (_flux.max() - _flux.min())
-        sigma0 = 4. # 4 pixel default
+        line_props = get_line_props(pixels, flux, xmin, xmax)
+        draw_line_marker(line_props, wave_val, ax)
 
-        try:
-            line_props = fit_emission_line(pix, norm_flux,
-                                           centroid0=pix[norm_flux.argmax()],
-                                           sigma0=sigma0,
-                                           amp0=np.sqrt(2*np.pi*sigma0**2),
-                                           offset0=0.)
-        except ValueError as e:
-            msg = "Failed to fit line! See terminal for more information."
-            logger.error(msg)
-            logger.error(str(e))
-            textbox.setText(msg)
-            return
-
-        peak = np.max(_flux)
-        centroid = line_props['centroid']
-        space = 0.02*np.ptp(flux)
-        ax.plot([centroid,centroid], [peak+space,peak+3*space],
-                lw=1., linestyle='-', marker='', alpha=0.5, c='#2166AC')
-        ax.text(centroid, peak+4*space, "{:.3f} $\AA$".format(wave_val),
-                ha='center', va='bottom', rotation='vertical')
         fig.suptitle('')
         plt.draw()
-
         fig.canvas.draw()
 
         map_dict['wavelength'].append(wave_val)
-        map_dict['pixel'].append(centroid)
+        map_dict['pixel'].append(line_props['centroid'])
+        line_widths.append(line_props['stddev'])
 
     # A 1D span selector to highlight a given line
     span = SpanSelector(ax, on_select, 'horizontal', useblit=True,
@@ -126,8 +149,54 @@ def gui_solution(pixels, flux, fig, ax, line_list=None):
     span_control.setCheckable(True)
     span_control.clicked.connect(enable_span)
     span_control.setStyleSheet("color: #de2d26; font-weight: bold;")
-
     fig.canvas.manager.toolbar.addWidget(span_control)
+
+    if line_list is not None:
+        def auto_identify():
+            _idx = np.argsort(map_dict['wavelength'])
+            wvln = np.array(map_dict['wavelength'])[_idx]
+            pixl = np.array(map_dict['pixel'])[_idx]
+
+            # build an approximate wavelength solution to predict where lines are
+            spl = InterpolatedUnivariateSpline(wvln, pixl, k=3)
+
+            predicted_pixels = spl(line_list)
+
+            new_waves = []
+            new_pixels = []
+
+            lw = np.median(line_widths)
+            for pix_ctr,xmin,xmax,wave in zip(predicted_pixels,
+                                              predicted_pixels-3*lw,
+                                              predicted_pixels+3*lw,
+                                              line_list):
+                lp = get_line_props(pixels, flux, xmin, xmax,
+                                    sigma0=lw)
+
+                if lp is None or lp['amp'] < 1000.: # HACK
+                    # logger.error("Failed to fit predicted line at {:.3f}A, {:.2f}pix"
+                    #              .format(wave, pix_ctr))
+                    continue
+
+                draw_line_marker(lp, wave, ax)
+                new_waves.append(wave)
+                new_pixels.append(pix_ctr)
+
+            fig.canvas.draw()
+
+            fig2,axes2 = plt.subplots(2,1,figsize=(6,10))
+            axes2[0].plot(new_pixels, new_waves, linestyle='none', marker='o')
+
+            coef = np.polynomial.chebyshev.chebfit(new_pixels, new_waves, deg=5)
+            pred = np.polynomial.chebyshev.chebval(new_pixels, coef)
+            axes2[1].plot(new_pixels, new_waves-pred,
+                          linestyle='none', marker='o')
+
+            plt.show()
+
+        autoid_control = QtWidgets.QPushButton('auto-identify')
+        autoid_control.clicked.connect(auto_identify)
+        fig.canvas.manager.toolbar.addWidget(autoid_control)
 
     plt.show()
 
