@@ -1,26 +1,20 @@
-# Standard library
-import os
-import sys
-
 # Third-party
-import astropy.units as u
 import numpy as np
 from scipy.optimize import minimize
 
 # Project
-from ..log import logger
 from ..utils import gaussian_constant
 
 __all__ = ['fit_emission_line']
 
-def _errfunc(p, pix, flux):
+def _errfunc(p, pix, flux, flux_ivar):
     if p[0] < 0 or p[2] < 0:
         return np.inf
 
     return np.sum((gaussian_constant(pix, *p) - flux)**2)
 
-def fit_emission_line(pix_grid, flux, centroid0=None, sigma0=None, amp0=None,
-                      offset0=None):
+def fit_emission_line(pix_grid, flux, flux_ivar=None,
+                      centroid0=None, sigma0=None, amp0=None, offset0=None):
     """
     TODO:
 
@@ -52,8 +46,11 @@ def fit_emission_line(pix_grid, flux, centroid0=None, sigma0=None, amp0=None,
     if sigma0 is None:
         sigma0 = 4. # MAGIC NUMBER
 
+    if flux_ivar is None:
+        flux_ivar = 1.
+
     p0 = (amp0, centroid0, sigma0, offset0)
-    res = minimize(_errfunc, x0=p0, args=(pix_grid, flux))
+    res = minimize(_errfunc, x0=p0, args=(pix_grid, flux, flux_ivar))
     p = res.x
 
     fail_msg = "Fitting spectral line in comp lamp spectrum failed. {msg}"
